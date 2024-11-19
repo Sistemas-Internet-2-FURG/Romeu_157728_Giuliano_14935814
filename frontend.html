@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API CRUD com JS Puro</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+
+    <!-- Tela de Login -->
+    <div id="login-container">
+        <h1>Login</h1>
+        <input type="text" id="nome" placeholder="Nome">
+        <input type="text" id="matricula" placeholder="Matrícula">
+        <button onclick="login()">Entrar</button>
+        <p id="login-message"></p>
+    </div>
+
+    <!-- Tela principal após login -->
+    <div id="app-container" style="display: none;">
+        <h1>Bem-vindo</h1>
+        <button onclick="logout()">Sair</button>
+        
+        <!-- Seção de Usuários -->
+        <h2>Usuários</h2>
+        <button onclick="showCadastroUsuario()">Cadastrar Usuário</button>
+       <button onclick="listarUsuarios()">Listar Usuários</button> <!-- Botão Listar -->
+       <button onclick="esconderUsuarios()">Esconder Usuários</button>
+
+       <ul id="usuarios-list"></ul>
+
+        <!-- Formulário de Cadastro de Usuário -->
+        <div id="cadastro-usuario" style="display: none;">
+            <h3>Cadastro de Usuário</h3>
+            <input type="text" id="usuario-nome" placeholder="Nome">
+            <input type="text" id="usuario-matricula" placeholder="Matrícula">
+            <select id="usuario-tipo">
+                <option value="aluno">Aluno</option>
+                <option value="professor">Professor</option>
+            </select>
+            <select id="usuario-curso-id">
+                <option value="">Selecione o Curso</option>
+                <!-- Cursos serão preenchidos dinamicamente -->
+            </select>
+            <button onclick="criarUsuario()">Cadastrar</button>
+            <button onclick="fecharCadastro('cadastro-usuario')">Fechar</button>
+        </div>
+
+        <!-- Seção de Cursos -->
+        <h2>Cursos</h2>
+        <button onclick="showCadastroCurso()">Cadastrar Curso</button>
+        <button onclick="listarCursos()">Listar Cursos</button> <!-- Botão Listar -->
+        <button onclick="esconderCursos()">Esconder Cursos</button> <!-- Botão Esconder -->
+        <ul id="cursos-list"></ul>
+
+        <!-- Formulário de Cadastro de Curso -->
+        <div id="cadastro-curso" style="display: none;">
+            <h3>Cadastro de Curso</h3>
+            <input type="text" id="curso-nome" placeholder="Nome do Curso">
+            <button onclick="criarCurso('curso-nome')">Cadastrar</button>
+            <button onclick="fecharCadastro('cadastro-curso')">Fechar</button>
+        </div>
+
+        <!-- Seção de Disciplinas -->
+        <h2>Disciplinas</h2>
+        <button onclick="showCadastroDisciplina()">Cadastrar Disciplina</button>
+        <button onclick="listarDisciplinas()">Listar Disciplinas</button> <!-- Botão Listar -->
+        <button onclick="esconderDisciplinas()">Esconder Disciplinas</button> <!-- Botão Esconder -->
+        <ul id="disciplinas-list"></ul>
+
+        <!-- Formulário de Cadastro de Disciplina -->
+        <div id="cadastro-disciplina" style="display: none;">
+            <h3>Cadastro de Disciplina</h3>
+            <input type="text" id="disciplina-nome" placeholder="Nome da Disciplina">
+            <select id="disciplina-curso-id">
+                <option value="">Selecione o Curso</option>
+                <!-- Cursos serão preenchidos dinamicamente -->
+            </select>
+            <button onclick="criarDisciplina()">Cadastrar</button>
+            <button onclick="fecharCadastro('cadastro-disciplina')">Fechar</button>
+        </div>
+
+        <!-- Seção de Matrículas -->
+        <h2>Matrículas</h2>
+        <button onclick="showCadastroMatricula()">Matrícula</button>
+        <button onclick="listarMatriculas()">Listar Matrículas</button>
+        <button id="esconder-lista" onclick="toggleListaMatriculas()">Esconder Matrículas</button>
+        <ul id="matriculas-list"></ul>
+
+        <!-- Formulário de Matrícula -->
+        <div id="cadastro-matricula" style="display: none;">
+            <h3>Matrícula de Aluno</h3>
+            <select id="matricula-curso-id">
+                <option value="">Selecione o Curso</option>
+                <!-- Cursos serão preenchidos dinamicamente -->
+            </select>
+            <select id="matricula-disciplina-id">
+                <option value="">Selecione a Disciplina</option>
+                <!-- Disciplinas serão preenchidas dinamicamente -->
+            </select>
+            <select id="matricula-aluno-id">
+                <option value="">Selecione o Aluno</option>
+                <!-- Alunos serão preenchidos dinamicamente -->
+            </select>
+            <button onclick="criarMatricula()">Matricular</button>
+            <button onclick="fecharCadastro('cadastro-matricula')">Fechar</button>
+        </div>
+    </div>
+
+
+    <script src="static/js/app.js"></script>
+
+    <script>
+        // Funções para mostrar e esconder os formulários
+        function showCadastroUsuario() {
+            document.getElementById('cadastro-usuario').style.display = 'block';
+            carregarCursos(); // Carregar cursos quando o formulário de cadastro de usuário for exibido
+        }
+
+        function fecharFormulario(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+    
+    
+        function showCadastroCurso() {
+            document.getElementById('cadastro-curso').style.display = 'block';
+        }
+    
+        function showCadastroDisciplina() {
+            document.getElementById('cadastro-disciplina').style.display = 'block';
+            carregarCursos();
+            listarCursos(); // Carregar cursos quando o formulário de cadastro de disciplina for exibido
+        }
+    
+       
+        
+        function showCadastroMatricula() {
+            // Exibe o formulário de matrícula
+            document.getElementById('cadastro-matricula').style.display = 'block';
+
+            // Chama a função que carrega os cursos
+            carregarCursosMatricula();  // Chama a função que carrega os cursos
+
+            // Captura o curso selecionado
+            const cursoId = document.getElementById('matricula-curso-id').value;
+
+            // Verifica se um curso foi selecionado
+            if (!cursoId) {
+                console.log('Erro: Selecione um curso antes de continuar.');
+                return;
+            }
+
+            // Agora, você pode usar o cursoId para carregar disciplinas e alunos
+            carregarDisciplinas(cursoId);  // Passa o ID do curso para carregar as disciplinas
+            carregarUsuarios();  // Chama a função para carregar os alunos
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+        carregarCursos();  // Carregar cursos ao carregar a página
+        document.getElementById('matricula-curso-id').addEventListener('change', carregarDisciplinas); // Atualiza disciplinas ao selecionar um curso
+        carregarUsuarios();  // Carregar usuários (professores e alunos)
+    });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            listarUsuarios(); // Carrega a lista de usuários quando a página carrega
+        });
+
+
+    
+        function fecharCadastro(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+    
+        // Função para carregar cursos dinamicamente no select
+        function carregarCursos() {
+            const selectCurso = document.getElementById('usuario-curso-id');
+            const selectDisciplinaCurso = document.getElementById('disciplina-curso-id');
+            const authToken = localStorage.getItem('auth_token');
+        
+            // Verificar se o token está presente
+            if (!authToken) {
+                console.error('Token de autenticação não encontrado no localStorage');
+                return;
+            }
+                    
+            // Carregar cursos no select de curso (para Usuário e Disciplina)
+            fetch('http://127.0.0.1:5000/apirestful/cursos', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(cursos => {
+                // Limpar as opções anteriores
+                selectCurso.innerHTML = '<option value="">Selecione o Curso</option>';
+                selectDisciplinaCurso.innerHTML = '<option value="">Selecione o Curso</option>';
+                
+                // Adicionar novos cursos
+                cursos.forEach(curso => {
+                    const option = document.createElement('option');
+                    option.value = curso[0]; // Usar o primeiro elemento como id
+                    option.textContent = curso[1]; // Usar o segundo elemento como nome
+                    selectCurso.appendChild(option);
+                    
+                    const optionDisciplina = document.createElement('option');
+                    optionDisciplina.value = curso[0]; // Usar o primeiro elemento como id
+                    optionDisciplina.textContent = curso[1]; // Usar o segundo elemento como nome
+                    selectDisciplinaCurso.appendChild(optionDisciplina);
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao carregar cursos:', error);
+            });
+        }
+//=========================
+
+
+ // Função que carrega os cursos para matrícula
+function carregarCursosMatricula() {
+    const selectCurso = document.getElementById('matricula-curso-id');
+    const authToken = localStorage.getItem('auth_token');  // Verifica o token de autenticação
+
+    // Verifica se o token de autenticação está presente
+    if (!authToken) {
+        console.error('Token de autenticação não encontrado');
+        return;
+    }
+
+    // Faz a requisição para carregar os cursos
+    fetch('http://127.0.0.1:5000/apirestful/cursos', {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(cursos => {
+        // Limpa o conteúdo do <select> antes de adicionar os novos cursos
+        selectCurso.innerHTML = '<option value="">Selecione o Curso</option>';
+
+        // Preenche o <select> com os cursos
+        cursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso[0];  // ID do curso
+            option.textContent = curso[1];  // Nome do curso
+            selectCurso.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Erro ao carregar cursos:', error);
+        mostrarErro('Não foi possível carregar os cursos.');
+    });
+}
+
+
+function carregarDisciplinas() {
+    const selectCurso = document.getElementById('matricula-curso-id');
+    const selectDisciplina = document.getElementById('matricula-disciplina-id');
+    const authToken = localStorage.getItem('auth_token');
+
+    if (!authToken) {
+        console.error('Token de autenticação não encontrado');
+        return;
+    }
+
+    // Limpar o campo de disciplinas antes de preencher
+    selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina</option>';
+
+    const cursoId = selectCurso.value;
+
+    if (!cursoId) {
+        console.log('Curso não selecionado');
+        return;
+    }
+
+    fetch(`http://127.0.0.1:5000/apirestful/disciplinas?curso_id=${cursoId}`, {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(disciplinas => {
+        disciplinas.forEach(disciplina => {
+            const option = document.createElement('option');
+            option.value = disciplina[0];  // ID da disciplina
+            option.textContent = disciplina[1];  // Nome da disciplina
+            selectDisciplina.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Erro ao carregar disciplinas:', error);
+        mostrarErro('Não foi possível carregar as disciplinas.');
+    });
+}
+
+
+    // Função para carregar alunos no select de Matrícula
+    function carregarUsuarios() {
+    const selectAluno = document.getElementById('matricula-aluno-id');
+    const authToken = localStorage.getItem('auth_token');
+
+    if (!authToken) {
+        console.error('Token de autenticação não encontrado');
+        return;
+    }
+
+    fetch('http://127.0.0.1:5000/apirestful/usuarios', {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(usuarios => {
+        selectAluno.innerHTML = '<option value="">Selecione o Usuário</option>'; // Limpar antes de preencher
+        usuarios.forEach(usuario => {
+            const option = document.createElement('option');
+            option.value = usuario[0];  // ID do usuário
+            option.textContent = usuario[1];  // Nome do usuário
+            selectAluno.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Erro ao carregar usuários:', error);
+        mostrarErro('Não foi possível carregar os usuários.');
+    });
+}
+
+
+    // ===============Listar, Atualizar e Deletar =================
+
+    
+       // Função para listar os usuários
+       function listarUsuarios() {
+            const usuariosList = document.getElementById('usuarios-list');
+            const authToken = localStorage.getItem('auth_token');
+
+            if (!authToken) {
+                console.error('Token de autenticação não encontrado');
+                return;
+            }
+
+            usuariosList.innerHTML = ''; 
+            usuariosList.style.display = 'block'; 
+
+            fetch('http://127.0.0.1:5000/apirestful/usuarios', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(usuarios => {
+                if (usuarios.length === 0) {
+                    usuariosList.innerHTML = '<li>Nenhum usuário encontrado.</li>';
+                } else {
+                    usuarios.forEach(usuario => {
+                        const listItem = document.createElement('li');
+                        listItem.style.display = 'flex'; // Flexbox para alinhar os itens
+                        listItem.style.justifyContent = 'space-between'; // Espaçamento entre os itens
+
+                        listItem.textContent = `${usuario[1]} (${usuario[0]})`; // Nome e matrícula
+                        
+                        // Botões de ação para atualização e exclusão
+                        const updateButton = document.createElement('button');
+                        updateButton.textContent = 'Atualizar';
+                        updateButton.onclick = () => editarUsuario(usuario[0]);
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Excluir';
+                        deleteButton.onclick = () => excluirUsuario(usuario[0]);
+
+                        // Adicionando os botões ao lado das informações do usuário
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.appendChild(updateButton);
+                        actionsDiv.appendChild(deleteButton);
+
+                        listItem.appendChild(actionsDiv);
+                        usuariosList.appendChild(listItem);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar usuários:', error);
+            });
+        }
+
+        function esconderUsuarios() {
+        const usuariosList = document.getElementById('usuarios-list');
+        usuariosList.style.display = 'none'; // Esconder a lista de usuários
+    }
+
+        // Função para editar um usuário
+        function editarUsuario(usuarioId) {
+            const usuarioNome = prompt('Novo nome do usuário:');
+            const usuarioMatricula = prompt('Nova matrícula do usuário:');
+            const usuarioTipo = prompt('Novo tipo de usuário (aluno/professor):');
+
+            if (!usuarioNome || !usuarioMatricula || !usuarioTipo) return;
+
+            fetch(`http://127.0.0.1:5000/apirestful/usuarios/${usuarioId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                },
+                body: JSON.stringify({
+                    nome: usuarioNome,
+                    matricula: usuarioMatricula,
+                    tipo: usuarioTipo
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Usuário atualizado com sucesso!');
+                listarUsuarios(); // Recarregar a lista
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar usuário:', error);
+            });
+        }
+
+        // Função para excluir um usuário
+        function excluirUsuario(usuarioId) {
+            if (!confirm('Tem certeza de que deseja excluir este usuário?')) return;
+
+            fetch(`http://127.0.0.1:5000/apirestful/usuarios/${usuarioId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Usuário excluído com sucesso!');
+                listarUsuarios(); // Recarregar a lista
+            })
+            .catch(error => {
+                console.error('Erro ao excluir usuário:', error);
+            });
+        }
+
+
+        // Função para esconder a lista
+        function esconderUsuarios() {
+            const usuariosList = document.getElementById('usuarios-list');
+            usuariosList.style.display = 'none'; // Esconde a lista
+        }
+
+        // Garantir que a lista esteja oculta ao carregar a página
+        window.onload = function() {
+            esconderUsuarios();
+        };
+
+
+    // Função para listar os cursos
+    function listarCursos() {
+        const cursosList = document.getElementById('cursos-list');
+        const authToken = localStorage.getItem('auth_token');
+
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        cursosList.innerHTML = ''; 
+        cursosList.style.display = 'block'; // Exibir a lista de cursos
+
+        fetch('http://127.0.0.1:5000/apirestful/cursos', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(cursos => {
+            if (cursos.length === 0) {
+                cursosList.innerHTML = '<li>Nenhum curso encontrado.</li>';
+            } else {
+                cursos.forEach(curso => {
+                    const listItem = document.createElement('li');
+                    listItem.style.display = 'flex'; // Flexbox para alinhar os itens
+                    listItem.style.justifyContent = 'space-between'; // Espaçamento entre os itens
+
+                    listItem.textContent = `${curso[1]} (ID: ${curso[0]})`; // Nome e ID do curso
+                    
+                    // Botões de ação para atualização e exclusão
+                    const updateButton = document.createElement('button');
+                    updateButton.textContent = 'Atualizar';
+                    updateButton.onclick = () => editarCurso(curso[0]);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Excluir';
+                    deleteButton.onclick = () => excluirCurso(curso[0]);
+
+                    // Adicionando os botões ao lado das informações do curso
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.appendChild(updateButton);
+                    actionsDiv.appendChild(deleteButton);
+
+                    listItem.appendChild(actionsDiv);
+                    cursosList.appendChild(listItem);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar cursos:', error);
+        });
+    }
+
+    // Função para editar um curso
+    function editarCurso(cursoId) {
+        const authToken = localStorage.getItem('auth_token');
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        const novoNome = prompt('Digite o novo nome do curso:');
+        if (!novoNome) return;
+
+        fetch(`http://127.0.0.1:5000/apirestful/cursos/${cursoId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ nome: novoNome })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+            }
+            listarCursos(); // Atualizar a lista de cursos
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar o curso:', error);
+        });
+    }
+
+    // Função para excluir um curso
+    function excluirCurso(cursoId) {
+        const authToken = localStorage.getItem('auth_token');
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        const confirmacao = confirm('Tem certeza que deseja excluir este curso?');
+        if (!confirmacao) return;
+
+        fetch(`http://127.0.0.1:5000/apirestful/cursos/${cursoId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+            }
+            listarCursos(); // Atualizar a lista de cursos
+        })
+        .catch(error => {
+            console.error('Erro ao excluir o curso:', error);
+        });
+    }
+
+
+    // Função para esconder a lista de cursos
+    function esconderCursos() {
+        const cursosList = document.getElementById('cursos-list');
+        if (cursosList.style.display === 'none') {
+            cursosList.style.display = 'block'; // Mostrar a lista de cursos
+        } else {
+            cursosList.style.display = 'none'; // Esconder a lista de cursos
+        }
+    }
+
+    
+    // Função para listar as disciplinas
+    function listarDisciplinas() {
+        const disciplinasList = document.getElementById('disciplinas-list');
+        const authToken = localStorage.getItem('auth_token');
+
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        disciplinasList.innerHTML = ''; 
+        disciplinasList.style.display = 'block'; // Exibir a lista de disciplinas
+
+        fetch('http://127.0.0.1:5000/apirestful/disciplinas', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(disciplinas => {
+            if (disciplinas.length === 0) {
+                disciplinasList.innerHTML = '<li>Nenhuma disciplina encontrada.</li>';
+            } else {
+                disciplinas.forEach(disciplina => {
+                    const listItem = document.createElement('li');
+                    listItem.style.display = 'flex'; // Flexbox para alinhar os itens
+                    listItem.style.justifyContent = 'space-between'; // Espaçamento entre os itens
+
+                    listItem.textContent = `${disciplina[1]} (ID: ${disciplina[0]})`; // Nome e ID da disciplina
+                    
+                    // Botões de ação para atualização e exclusão
+                    const updateButton = document.createElement('button');
+                    updateButton.textContent = 'Atualizar';
+                    updateButton.onclick = () => editarDisciplina(disciplina[0]);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Excluir';
+                    deleteButton.onclick = () => excluirDisciplina(disciplina[0]);
+
+                    // Adicionando os botões ao lado das informações da disciplina
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.appendChild(updateButton);
+                    actionsDiv.appendChild(deleteButton);
+
+                    listItem.appendChild(actionsDiv);
+                    disciplinasList.appendChild(listItem);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar disciplinas:', error);
+        });
+    }
+
+    // Função para editar uma disciplina
+    function editarDisciplina(disciplinaId) {
+        const authToken = localStorage.getItem('auth_token');
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        const novoNome = prompt('Digite o novo nome da disciplina:');
+        if (!novoNome) return;
+
+        fetch(`http://127.0.0.1:5000/apirestful/disciplinas/${disciplinaId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ nome: novoNome })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+            }
+            listarDisciplinas(); // Atualizar a lista de disciplinas
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar a disciplina:', error);
+        });
+    }
+
+    // Função para excluir uma disciplina
+    function excluirDisciplina(disciplinaId) {
+        const authToken = localStorage.getItem('auth_token');
+        if (!authToken) {
+            console.error('Token de autenticação não encontrado');
+            return;
+        }
+
+        const confirmacao = confirm('Tem certeza que deseja excluir esta disciplina?');
+        if (!confirmacao) return;
+
+        fetch(`http://127.0.0.1:5000/apirestful/disciplinas/${disciplinaId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+            }
+            listarDisciplinas(); // Atualizar a lista de disciplinas
+        })
+        .catch(error => {
+            console.error('Erro ao excluir a disciplina:', error);
+        });
+    }
+
+    // Função para esconder a lista de disciplinas
+    function esconderDisciplinas() {
+        const disciplinasList = document.getElementById('disciplinas-list');
+        if (disciplinasList.style.display === 'none') {
+            disciplinasList.style.display = 'block'; // Mostrar a lista de disciplinas
+        } else {
+            disciplinasList.style.display = 'none'; // Esconder a lista de disciplinas
+        }
+    }
+
+
+      // Função para listar as matrículas
+      function listarMatriculas() {
+          const matriculasList = document.getElementById('matriculas-list');
+          const authToken = localStorage.getItem('auth_token');
+
+          if (!authToken) {
+              console.error('Token de autenticação não encontrado');
+              return;
+          }
+
+          fetch('http://127.0.0.1:5000/apirestful/matriculas', {
+              headers: {
+                  'Authorization': `Bearer ${authToken}`
+              }
+          })
+          .then(response => response.json())
+          .then(matriculas => {
+              matriculasList.innerHTML = ''; // Limpar a lista antes de adicionar
+              matriculas.forEach(matricula => {
+                  // Criação do item de lista
+                  const listItem = document.createElement('li');
+                  listItem.id = `matricula-item-${matricula[0]}`; // Atribuir ID único à matrícula
+
+                  // Adiciona o texto com os dados da matrícula
+                  listItem.innerHTML = `
+                      Aluno: ${matricula[1]} - Curso: ${matricula[2]} - Disciplina: ${matricula[3]}
+                      <button onclick="atualizarMatricula(${matricula[0]})">Atualizar</button>
+                      <button onclick="deletarMatricula(${matricula[0]})">Deletar</button>
+                  `;
+
+                  // Adiciona o item à lista
+                  matriculasList.appendChild(listItem);
+              });
+          })
+          .catch(error => {
+              console.error('Erro ao carregar matrículas:', error);
+          });
+      }
+
+      // Função para esconder ou mostrar a lista de matrículas
+      function toggleListaMatriculas() {
+          const matriculasList = document.getElementById('matriculas-list');
+          const esconderButton = document.getElementById('esconder-lista');
+
+          // Alterna entre esconder e mostrar a lista
+          if (matriculasList.style.display === 'none') {
+              matriculasList.style.display = 'block';
+              esconderButton.textContent = 'Esconder Matrículas';
+          } else {
+              matriculasList.style.display = 'none';
+              esconderButton.textContent = 'Mostrar Matrículas';
+          }
+      }
+
+      // Função para atualizar matrícula
+      async function atualizarMatricula(matriculaId) {
+          const usuarioId = prompt('Novo ID do aluno:');
+          const disciplinaId = prompt('Novo ID da disciplina:');
+
+          if (!usuarioId || !disciplinaId) {
+              alert('Por favor, forneça os dados necessários.');
+              return;
+          }
+
+          const token = localStorage.getItem('auth_token');
+          try {
+              const response = await fetch(`http://127.0.0.1:5000/apirestful/matriculas/${matriculaId}`, {
+                  method: 'PUT',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ usuario_id: usuarioId, disciplina_id: disciplinaId })
+              });
+
+              const data = await response.json();
+              alert(data.message || 'Matrícula atualizada com sucesso');
+              if (response.ok) {
+                  listarMatriculas(); // Atualiza a lista de matrículas
+              }
+          } catch (error) {
+              alert('Erro ao atualizar matrícula');
+          }
+      }
+
+      // Função para deletar matrícula
+      async function deletarMatricula(matriculaId) {
+          if (!confirm('Tem certeza que deseja deletar esta matrícula?')) {
+              return;
+          }
+
+          const token = localStorage.getItem('auth_token');
+          try {
+              const response = await fetch(`http://127.0.0.1:5000/apirestful/matriculas/${matriculaId}`, {
+                  method: 'DELETE',
+                  headers: {
+                      'Authorization': `Bearer ${token}`
+                  }
+              });
+
+              const data = await response.json();
+              alert(data.message || 'Matrícula deletada com sucesso');
+              if (response.ok) {
+                  listarMatriculas(); // Atualiza a lista de matrículas
+              }
+          } catch (error) {
+              alert('Erro ao deletar matrícula');
+          }
+      }
+
+    
+
+
+
+
+    // Função auxiliar para exibir mensagens de erro de forma genérica
+    function mostrarErro(mensagem) {
+        const alertElement = document.getElementById('alert-message');
+        if (!alertElement) {
+            const newAlertElement = document.createElement('div');
+            newAlertElement.id = 'alert-message';
+            newAlertElement.style.color = 'red';
+            newAlertElement.style.padding = '10px';
+            document.body.appendChild(newAlertElement);
+            alertElement = newAlertElement;
+        }
+        alertElement.textContent = mensagem;
+    }
+    </script>
+    
+</body>
+</html>
